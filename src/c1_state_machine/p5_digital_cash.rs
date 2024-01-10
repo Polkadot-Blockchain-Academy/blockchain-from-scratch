@@ -136,7 +136,7 @@ fn sm_5_empty_spend_fails() {
 }
 
 #[test]
-fn sm_5_empty_receive_fails() {
+fn sm_5_empty_receive_works() {
 	let start = State::from([Bill { owner: User::Alice, amount: 20, serial: 0 }]);
 	let end = DigitalCashSystem::next_state(
 		&start,
