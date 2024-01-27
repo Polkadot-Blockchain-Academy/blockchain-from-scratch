@@ -43,22 +43,25 @@ impl StateMachine for WeirdSwitchMachine {
 	type Transition = Toggle;
 
 	fn next_state(starting_state: &TwoSwitches, t: &Toggle) -> TwoSwitches {
-		let mut state = TwoSwitches {first_switch: starting_state.first_switch, second_switch: starting_state.second_switch};
-		
-		if starting_state.first_switch == false && t == &Toggle::FirstSwitch{
+		let mut state = TwoSwitches {
+			first_switch: starting_state.first_switch,
+			second_switch: starting_state.second_switch,
+		};
+
+		if starting_state.first_switch == false && t == &Toggle::FirstSwitch {
 			state.first_switch = true;
 		}
 
-		if starting_state.first_switch == true && t == &Toggle::FirstSwitch{
+		if starting_state.first_switch == true && t == &Toggle::FirstSwitch {
 			state.first_switch = false;
 			state.second_switch = false;
 		}
 
-		if starting_state.second_switch == false && t == &Toggle::SecondSwitch{
+		if starting_state.second_switch == false && t == &Toggle::SecondSwitch {
 			state.second_switch = true;
 		}
-		
-		if starting_state.second_switch == true && t == &Toggle::SecondSwitch{
+
+		if starting_state.second_switch == true && t == &Toggle::SecondSwitch {
 			state.second_switch = false;
 		}
 		return state;
