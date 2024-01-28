@@ -59,7 +59,39 @@ impl StateMachine for Atm {
 	type Transition = Action;
 
 	fn next_state(starting_state: &Self::State, t: &Self::Transition) -> Self::State {
-		todo!("Exercise 4")
+		match &t{
+			Action::SwipeCard(d)=>{
+				if starting_state.expected_pin_hash == Auth::Waiting{
+					let mut ret_state = Atm {
+						cash_inside: starting_state.cash_inside,
+						expected_pin_hash: Auth::Authenticating(1234),
+						keystroke_register: Vec::new(),
+					};
+					return ret_state;
+				} 
+				if starting_state.expected_pin_hash == Auth::Authenticating(1234){
+					let mut ret_state = Atm {
+						cash_inside: starting_state.cash_inside,
+						expected_pin_hash: starting_state.expected_pin_hash.clone(), 
+						keystroke_register: starting_state.keystroke_register.clone(),
+					};
+					return ret_state;
+				}
+				todo!()
+			}
+			Action::PressKey(d)=>{
+				if starting_state.expected_pin_hash == Auth::Waiting{
+					let mut ret_state = Atm {
+						cash_inside: starting_state.cash_inside,
+						expected_pin_hash: starting_state.expected_pin_hash.clone(), 
+						keystroke_register: starting_state.keystroke_register.clone(),
+					};
+					// ret_state.keystroke_register.push(d.clone());
+					return ret_state;
+				}
+				todo!()
+			}
+		}
 	}
 }
 
