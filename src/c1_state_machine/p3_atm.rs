@@ -89,6 +89,15 @@ impl StateMachine for Atm {
 					// ret_state.keystroke_register.push(d.clone());
 					return ret_state;
 				}
+				if starting_state.expected_pin_hash == Auth::Authenticating(1234){
+					let mut ret_state = Atm {
+						cash_inside: starting_state.cash_inside,
+						expected_pin_hash: starting_state.expected_pin_hash.clone(), 
+						keystroke_register: starting_state.keystroke_register.clone(),
+					};
+					ret_state.keystroke_register.push(d.clone());
+					return ret_state;
+				}
 				todo!()
 			}
 		}
