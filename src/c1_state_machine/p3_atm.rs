@@ -102,17 +102,25 @@ impl StateMachine for Atm {
 						let actual_pinhash_auth = Auth::Authenticating(actual_pinhash);
 						if actual_pinhash_auth != ret_state.expected_pin_hash{
 							ret_state.expected_pin_hash = Auth::Waiting;
-							ret_state.keystroke_register = vec![];
 						}
-
-						if actual_pinhash_auth == ret_state.expected_pin_hash{
+						else{
 							ret_state.expected_pin_hash = Auth::Authenticated;
-							ret_state.keystroke_register = vec![];
 						}
+						ret_state.keystroke_register = vec![];
 						return ret_state;
 					}
 					ret_state.keystroke_register.push(d.clone());
 					return ret_state;
+				}
+				if starting_state.expected_pin_hash == Auth::Authenticated{
+					let mut ret_state = Atm {
+						cash_inside: starting_state.cash_inside,
+						expected_pin_hash: starting_state.expected_pin_hash.clone(), 
+						keystroke_register: starting_state.keystroke_register.clone(),
+					};
+					ret_state.keystroke_register.push(d.clone());
+					return ret_state;
+
 				}
 				todo!()
 			}
