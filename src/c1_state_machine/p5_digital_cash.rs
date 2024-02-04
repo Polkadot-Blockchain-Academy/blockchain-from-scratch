@@ -106,11 +106,15 @@ impl StateMachine for DigitalCashSystem {
 				let mut spends_sum = 0;
 				for i in spends{
 					spends_sum += i.amount; 
+					
 				}
 
 				let mut receives_sum = 0;
 				for i in receives{
 					if i.amount == u64::MAX || i.amount == 0{
+						return ret_state;
+					}
+					if i.serial < starting_state.next_serial{
 						return ret_state;
 					}
 					receives_sum += i.amount; 
@@ -148,16 +152,54 @@ impl StateMachine for DigitalCashSystem {
 					}
 				}
 				
+				let mut user_receives_dict = HashMap::new();
+				for i in receives{
+					let user_receives = user_receives_dict.get(&i.owner).unwrap_or(&0);
+						user_receives_dict.insert(i.owner, i.amount+user_receives);
+				}
+				let bank_updated_but_cloned = bank_after_spends.clone();
 
-				for i  in receives{
-					let receiver = i.owner;
-					let received_amount = i.amount;
-					for acc in starting_state.bills.iter(){
+				
+				for i in receives{
+					let mut account_exists = false;
+					for acc in bank_updated_but_cloned.bills.iter(){
+						if i.owner == acc.owner{
+							account_exists = true;
+						}
+					}
+					if account_exists == false{
+						let new_account = Account{
+							owner: i.owner,
+							amount: 0,
+							serial: bank_after_spends.next_serial,
+						};
+						bank_after_spends.add_bill(new_account)
+					}
+				}
+				let bank_updated_but_cloned = bank_after_spends.clone();
+
+				
+
+				for i  in user_receives_dict{
+					let receiver = i.0;
+					let received_amount = i.1;
+					let mut account_exists = false;
+					for acc in bank_updated_but_cloned.bills.iter(){
 						if receiver == acc.owner{
 							let mut new_account = acc.clone();
+							bank_after_spends.bills.remove(&new_account);
 							new_account.amount += received_amount; 
 							bank_after_spends.bills.insert(new_account);
+							account_exists = true;
 						}
+					}
+					if account_exists == false{
+						let new_account = Account{
+							owner: receiver,
+							amount: received_amount,
+							serial: bank_after_spends.next_serial,
+						};
+						bank_after_spends.add_bill(new_account)
 					}
 				}
 				return bank_after_spends;
