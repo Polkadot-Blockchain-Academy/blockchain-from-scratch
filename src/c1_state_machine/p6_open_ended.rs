@@ -23,11 +23,16 @@
 //!   - Reputation System
 
 use super::StateMachine;
-use std::io;
+// use std::io;
+
+
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 enum ValueInCell{
+	Empty,
 	X,
 	O
 }
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct MoveMaker {
 	board: [[ValueInCell; 3]; 3],
 	player1: ValueInCell,
@@ -36,9 +41,10 @@ pub struct MoveMaker {
 	winner: Option<ValueInCell>
 }
 
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum Action {
-	make_move(i32,i32),
-	check_win,
+	MakeMove(usize,usize),
+	CheckWin,
 }
 
 impl StateMachine for MoveMaker {
@@ -46,141 +52,145 @@ impl StateMachine for MoveMaker {
 	type Transition = Action;
 
 	fn next_state(starting: &Self::State, t: &Self::Transition) -> Self::State {
-		match t{
-			&Action::print_board(board: &[[char; 3]; 3]) => {
-				for i in 0..3{
-					for j in 0..3{
-						print!("{}", board[i][j]);
-					}
-					println!();
-				}
+		let mut new_state = starting.clone();
 
-			&Action::make_move(board: &mut[[char; 3]; 3], player: &mut char) => {
-				let mut x = String::new();
-				let mut y = String::new();
-				println!("Please enter the row for your move:");
-				io::stdin().read_line(&mut x).unwrap();
-				println!("Please enter the column for your move:");
-				io::stdin().read_line(&mut y).unwrap();
-				
-				let x: usize = x.trim().parse().unwrap();
-				let y: usize = y.trim().parse().unwrap();
-			
-				if x >= 3 || y >= 3{
-					println!("Invalid move!");
-					make_move(board, player);
-				}
-				if board[x][y] != 'X' && board[x][y] != 'O'{
-					board[x][y] = *player;
-			
-					if *player == 'X'{
-						*player = 'O';
-					}
-					else{
-						*player = 'X';
-					}
-				}
-				else{
-					println!("Invalid move!");
-					make_move(board, player);
-				}
-			}
+        match t {
+            Action::MakeMove(row, col) => {
+                if new_state.is_next_player1 {
+                    new_state.board[*row][*col] = new_state.player1.clone();
+                } else {
+                    new_state.board[*row][*col] = new_state.player2.clone();
+                }
 
-			&Action::check_win(board: &[[char; 3]; 3], player: char) => {
-				for i in 0..3{
-					if board[i][0] == board[i][1] && board[i][1] == board[i][2] {
-						return true;
-					}
-				}
-				for i in 0..3 {
-					if board[i][0] == board[i][1] && board[i][1] == board[i][2] {
-						return true;
-					}
-				}
-				if board[0][0] == board[1][1] && board[1][1] == board[2][2] {
-					return true;
-				}
-				if board[0][2] == board[1][1] && board[1][1] == board[2][0] {
-					return true;
-				}
-				return false;
-			}
+                // Toggle player turn
+                new_state.is_next_player1 = !new_state.is_next_player1;
+            }
+            Action::CheckWin => {
+                new_state.winner = new_state.check_winner();
+            }
+        }
 
-		}
-	}
+        new_state
+    }
 }
 
-#[test]
-fn playing(){
-	let mut board = [['1', '2', '3'], ['4', '5', '6'], ['7', '8', '9']];
-	let mut player = 'X';
+impl MoveMaker {
+    // Constructor
+    pub fn new(player1: ValueInCell, player2: ValueInCell) -> Self {
+        MoveMaker {
+            board: [[ValueInCell::Empty; 3]; 3],
+            player1,
+            player2,
+            is_next_player1: true,
+            winner: None,
+        }
+    }
 
-	loop{
-		print_board(&board);
-		make_move(&mut board, &mut player);
+    // Check for a winner
+    fn check_winner(&self) -> Option<ValueInCell> {
+        // Check rows
+        for i in 0..3 {
+            if self.board[i][0] != ValueInCell::Empty
+                && self.board[i][0] == self.board[i][1]
+                && self.board[i][0] == self.board[i][2]
+            {
+                return Some(self.board[i][0]);
+            }
+        }
 
-		if check_win(&board, player){
-			println!("Player {} wins!", player);
-			break;
-		}
-	}
+        // Check columns
+        for i in 0..3 {
+            if self.board[0][i] != ValueInCell::Empty
+                && self.board[0][i] == self.board[1][i]
+                && self.board[0][i] == self.board[2][i]
+            {
+                return Some(self.board[0][i]);
+            }
+        }
+
+        // Check diagonals
+        if self.board[0][0] != ValueInCell::Empty
+            && self.board[0][0] == self.board[1][1]
+            && self.board[0][0] == self.board[2][2]
+        {
+            return Some(self.board[0][0]);
+        }
+
+        if self.board[0][2] != ValueInCell::Empty
+            && self.board[0][2] == self.board[1][1]
+            && self.board[0][2] == self.board[2][0]
+        {
+            return Some(self.board[0][2]);
+        }
+
+        // Check for a draw
+        if self.board.iter().all(|row| row.iter().all(|&cell| cell != ValueInCell::Empty)) {
+            return Some(ValueInCell::Empty);
+        }
+
+        None
+    }
 }
 
-fn print_board(board: &[[char; 3]; 3]){
-	for i in 0..3{
-		for j in 0..3{
-			print!("{}", board[i][j]);
-		}
-		println!();
-	}
-}
-fn make_move(board: &mut[[char; 3]; 3], player: &mut char){
-	let mut x = String::new();
-	let mut y = String::new();
-	println!("Please enter the row for your move:");
-	io::stdin().read_line(&mut x).unwrap();
-	println!("Please enter the column for your move:");
-	io::stdin().read_line(&mut y).unwrap();
-	
-	let x: usize = x.trim().parse().unwrap();
-	let y: usize = y.trim().parse().unwrap();
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-	if x >= 3 || y >= 3{
-		println!("Invalid move!");
-		make_move(board, player);
-	}
-	if board[x][y] != 'X' && board[x][y] != 'O'{
-		board[x][y] = *player;
+    #[test]
+    fn test_new_game() {
+        let game = MoveMaker::new(ValueInCell::X, ValueInCell::O);
+        assert_eq!(game.board, [[ValueInCell::Empty; 3]; 3]);
+        assert_eq!(game.player1, ValueInCell::X);
+        assert_eq!(game.player2, ValueInCell::O);
+        assert_eq!(game.is_next_player1, true);
+        assert_eq!(game.winner, None);
+    }
 
-		if *player == 'X'{
-			*player = 'O';
-		}
-		else{
-			*player = 'X';
-		}
-	}
-	else{
-		println!("Invalid move!");
-		make_move(board, player);
-	}
-}
+    #[test]
+    fn test_make_move() {
+        let mut game = MoveMaker::new(ValueInCell::X, ValueInCell::O);
+        assert_eq!(game.board[0][0], ValueInCell::Empty);
 
-fn check_win(board: &[[char; 3]; 3], player: char) -> bool {
-	for i in 0..3{
-		if board[i][0] == board[i][1] && board[i][1] == board[i][2] {
-			return true;
-		}
-	}
-	for i in 0..3 {
-		if board[i][0] == board[i][1] && board[i][1] == board[i][2] {
-			return true;
-		}
-	}
-	if board[0][0] == board[1][1] && board[1][1] == board[2][2] {
-		return true;
-	}
-	if board[0][2] == board[1][1] && board[1][1] == board[2][0] {
-		return true;
-	}
-	return false;
+        game = MoveMaker::next_state(&game, &Action::MakeMove(0, 0));
+        assert_eq!(game.board[0][0], ValueInCell::X);
+        assert_eq!(game.is_next_player1, false);
+
+        game = MoveMaker::next_state(&game, &Action::MakeMove(1, 1));
+        assert_eq!(game.board[1][1], ValueInCell::O);
+        assert_eq!(game.is_next_player1, true);
+    }
+
+    #[test]
+    fn test_check_win() {
+        let mut game = MoveMaker::new(ValueInCell::X, ValueInCell::O);
+        assert_eq!(game.winner, None);
+
+        game.board = [
+            [ValueInCell::X, ValueInCell::X, ValueInCell::X],
+            [ValueInCell::Empty, ValueInCell::Empty, ValueInCell::Empty],
+            [ValueInCell::Empty, ValueInCell::Empty, ValueInCell::Empty],
+        ];
+        assert_eq!(MoveMaker::next_state(&game, &Action::CheckWin).winner, Some(ValueInCell::X));
+
+        game.board = [
+            [ValueInCell::O, ValueInCell::Empty, ValueInCell::Empty],
+            [ValueInCell::O, ValueInCell::Empty, ValueInCell::Empty],
+            [ValueInCell::O, ValueInCell::Empty, ValueInCell::Empty],
+        ];
+        assert_eq!(MoveMaker::next_state(&game, &Action::CheckWin).winner, Some(ValueInCell::O));
+
+        game.board = [
+            [ValueInCell::X, ValueInCell::Empty, ValueInCell::Empty],
+            [ValueInCell::Empty, ValueInCell::X, ValueInCell::Empty],
+            [ValueInCell::Empty, ValueInCell::Empty, ValueInCell::X],
+        ];
+        assert_eq!(MoveMaker::next_state(&game, &Action::CheckWin).winner, Some(ValueInCell::X));
+
+        game.board = [
+            [ValueInCell::X, ValueInCell::O, ValueInCell::X],
+            [ValueInCell::X, ValueInCell::O, ValueInCell::O],
+            [ValueInCell::O, ValueInCell::X, ValueInCell::X],
+        ];
+        assert_eq!(MoveMaker::next_state(&game, &Action::CheckWin).winner, Some(ValueInCell::Empty));
+    }
 }
