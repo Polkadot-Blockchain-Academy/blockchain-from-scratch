@@ -5,6 +5,8 @@
 //! 1. Rules to throttle authoring. In this case we will use a simple PoW.
 //! 2. Arbitrary / Political rules. Here we will implement two alternate validity rules
 
+// use std::hash::Hash;
+
 use crate::hash;
 
 // We will use Rust's built-in hashing where the output type is u64. I'll make an alias
@@ -14,7 +16,7 @@ type Hash = u64;
 /// In this lesson we are introducing proof of work onto our blocks. We need a hash threshold.
 /// You may change this as you see fit, and I encourage you to experiment. Probably best to start
 /// high so we aren't wasting time mining. I'll start with 1 in 100 blocks being valid.
-const THRESHOLD: u64 = u64::max_value() / 100;
+const THRESHOLD: u64 = u64::max_value() / 1;
 
 /// In this lesson we introduce the concept of a contentious hard fork. The fork will happen at
 /// this block height.
@@ -38,12 +40,24 @@ pub struct Header {
 impl Header {
 	/// Returns a new valid genesis header.
 	fn genesis() -> Self {
-		todo!("Exercise 1")
+		Header{
+			parent: 0,
+			height: 0,
+			extrinsic: 0,
+			state: 0,
+			consensus_digest: 0
+		}
 	}
 
 	/// Create and return a valid child header.
 	fn child(&self, extrinsic: u64) -> Self {
-		todo!("Exercise 2")
+		Header {
+			parent: hash(&self),
+			height: &self.height + 1,
+			extrinsic,
+			state: self.state + extrinsic,
+			consensus_digest: 0
+		}
 	}
 
 	/// Verify that all the given headers form a valid chain from this header to the tip.
@@ -51,8 +65,30 @@ impl Header {
 	/// In addition to all the rules we had before, we now need to check that the block hash
 	/// is below a specific threshold.
 	fn verify_sub_chain(&self, chain: &[Header]) -> bool {
-		todo!("Exercise 3")
+		//if hash > trash hold false
+		let mut prev_header = self;
+
+		for header in chain{
+			if header.parent != hash(&prev_header){
+				return false;
+			}
+			if header.height != prev_header.height +1{
+				return false;
+			}
+			if header.state != prev_header.state + header.extrinsic{
+				return false;
+			}
+			if hash(&header) >= THRESHOLD{
+				return false;
+			}
+			if header.consensus_digest != prev_header.consensus_digest{
+				return false;
+			}
+			prev_header = header;
+		}
+		true
 	}
+	
 
 	// After the blockchain ran for a while, a political rift formed in the community.
 	// (See the constant FORK_HEIGHT) which is set to 2 by default.
