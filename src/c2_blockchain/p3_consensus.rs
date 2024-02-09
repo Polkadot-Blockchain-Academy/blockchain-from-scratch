@@ -182,8 +182,39 @@ impl Header {
 /// G -- 1 -- 2
 ///            \-- 3'-- 4'
 fn build_contentious_forked_chain() -> (Vec<Header>, Vec<Header>, Vec<Header>) {
-	todo!("Exercise 6")
+	let g = Header::genesis();
+
+	let mut common_chain = vec![g.clone()];
+	let mut last_header = g.clone();
+	for i in 0..1 {
+		let new_header = last_header.child(0); 
+		last_header = new_header.clone();
+        common_chain.push(new_header);
+	}
+
+	let mut even_header = last_header.clone();
+	let mut even_chain = vec![];
+	for i in 0..3{
+		let new_header = even_header.child(2); 
+		even_header = new_header.clone();
+        even_chain.push(new_header);
+	}
+
+	let mut odd_header = last_header.clone();
+	let mut odd_chain = vec![];
+	for i in 0..3{
+		let mut default_extrinsic = 2;
+		if odd_header.state % 2 == 0{
+			default_extrinsic = 1;
+		}
+		let new_header = odd_header.child(default_extrinsic); 
+		odd_header = new_header.clone();
+        odd_chain.push(new_header);
+	}
+
+	return (common_chain, even_chain, odd_chain);
 }
+
 
 // To run these tests: `cargo test bc_3`
 #[test]
