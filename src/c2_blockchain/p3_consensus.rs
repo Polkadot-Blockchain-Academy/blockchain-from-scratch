@@ -99,13 +99,69 @@ impl Header {
 	/// verify that the given headers form a valid chain.
 	/// In this case "valid" means that the STATE MUST BE EVEN.
 	fn verify_sub_chain_even(&self, chain: &[Header]) -> bool {
-		todo!("Exercise 4")
+		let mut prev_header = self;
+		let mut odd_state = 0;
+
+		for header in chain{
+			if header.parent != hash(&prev_header){
+				return false;
+			}
+			if header.height != prev_header.height +1{
+				return false;
+			}
+			if header.state != prev_header.state + header.extrinsic{
+				return false;
+			}
+			if header.state % 2 != 0{
+				odd_state += 1;
+			}
+			if hash(&header) >= THRESHOLD{
+				return false;
+			}
+			if header.consensus_digest != prev_header.consensus_digest{
+				return false;
+			}
+			
+			prev_header = header;
+		}
+		if odd_state >= FORK_HEIGHT{
+			return false;
+		}
+		true
 	}
 
 	/// verify that the given headers form a valid chain.
 	/// In this case "valid" means that the STATE MUST BE ODD.
 	fn verify_sub_chain_odd(&self, chain: &[Header]) -> bool {
-		todo!("Exercise 5")
+		let mut prev_header = self;
+		let mut even_state = 0;
+
+		for header in chain{
+			if header.parent != hash(&prev_header){
+				return false;
+			}
+			if header.height != prev_header.height +1{
+				return false;
+			}
+			if header.state != prev_header.state + header.extrinsic{
+				return false;
+			}
+			if header.state % 2 == 0{
+				even_state += 1;
+			}
+			if hash(&header) >= THRESHOLD{
+				return false;
+			}
+			if header.consensus_digest != prev_header.consensus_digest{
+				return false;
+			}
+			
+			prev_header = header;
+		}
+		if even_state >= FORK_HEIGHT{
+			return false;
+		}
+		true
 	}
 }
 
