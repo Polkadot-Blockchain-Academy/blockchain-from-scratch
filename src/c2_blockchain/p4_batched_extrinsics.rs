@@ -37,7 +37,7 @@ impl Header {
 	pub fn child(&self, extrinsics_root: Hash, state: u64) -> Self {
 		Header {
 			parent: hash(&self),
-			height: &self.height + 1,
+			height: self.height + 1,
 			extrinsics_root,
 			state,
 			consensus_digest: self.consensus_digest
@@ -106,12 +106,14 @@ impl Block {
 	/// Create and return a valid child block.
 	/// The extrinsics are batched now, so we need to execute each of them.
 	pub fn child(&self, extrinsics: Vec<u64>) -> Self {
+		let new_height = self.header.height + 1;
 		let new_state = extrinsics.iter().sum();
+		let extrinsics_root = hash(&extrinsics);
 
 		let header = Header {
-			parent: hash(&self),
-			height: &self.header.height + 1,
-			extrinsics_root: hash(&extrinsics),
+			parent: hash(&self.header),
+			height: new_height,
+			extrinsics_root,
 			state: new_state,
 			consensus_digest: self.header.consensus_digest
 		};
@@ -134,22 +136,21 @@ impl Block {
 				return false;
 			}
 
-			let mut prev_header = &self.header;
-			let mut state = &self.header.state;
-
-			for block in chain{
-				if block.header.parent != hash(prev_header){
-					return false;
-				}
-				if block.header.height != prev_header.height{
-					return false;
-				}
-				if block.header.state != state + block.body.iter().sum::<u64>(){
-					return false;
-				}
-				prev_header = &block.header;
-				state = &block.header.state;
+			let mut prev_header = &prev_block.header;
+			let mut state = &prev_block.header.state;
+		
+			if block.header.parent != hash(prev_header){
+				return false;
 			}
+			if block.header.height != prev_header.height + 1{
+				return false;
+			}
+			if block.header.state != state + block.body.iter().sum::<u64>(){
+				return false;
+			}
+			prev_header = &block.header;
+			state = &block.header.state;
+			
 			prev_block = block;
 		}
 		true
@@ -243,6 +244,8 @@ fn bc_4_verify_three_blocks() {
 	let b1 = g.child(vec![1]);
 	let b2 = b1.child(vec![2]);
 	let chain = vec![g.clone(), b1, b2];
+	println!("Chain: {:?}", chain); // Debug print added
+
 	assert!(g.verify_sub_chain(&chain[1..]));
 }
 
@@ -279,6 +282,9 @@ fn bc_4_student_invalid_block_really_is_invalid() {
 
 	let b1 = build_invalid_child_block_with_valid_header(gh);
 	let h1 = &b1.header;
+	println!("Genesis header: {:?}", gh); // Debug print added
+    println!("Invalid block header: {:?}", h1); // Debug print added
+
 
 	// Make sure that the header is valid according to header rules.
 	assert!(gh.verify_child(h1));
