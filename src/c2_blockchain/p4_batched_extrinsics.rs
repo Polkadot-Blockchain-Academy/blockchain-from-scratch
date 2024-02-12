@@ -107,7 +107,7 @@ impl Block {
 	/// The extrinsics are batched now, so we need to execute each of them.
 	pub fn child(&self, extrinsics: Vec<u64>) -> Self {
 		let new_height = self.header.height + 1;
-		let new_state = extrinsics.iter().sum();
+		let new_state = &self.header.state + extrinsics.iter().sum::<u64>();
 		let extrinsics_root = hash(&extrinsics);
 
 		let header = Header {
@@ -167,7 +167,7 @@ impl Block {
 /// Notice that you do not need the entire parent block to do this. You only need the header.
 fn build_invalid_child_block_with_valid_header(parent: &Header) -> Block {
     let child_header = Header {
-        parent: parent.parent, 
+        parent: hash(&parent), 
 		height: parent.height + 1,
         extrinsics_root: hash(&vec![1, 2, 3]), 
         state: 100, 
@@ -282,10 +282,7 @@ fn bc_4_student_invalid_block_really_is_invalid() {
 
 	let b1 = build_invalid_child_block_with_valid_header(gh);
 	let h1 = &b1.header;
-	println!("Genesis header: {:?}", gh); // Debug print added
-    println!("Invalid block header: {:?}", h1); // Debug print added
-
-
+	
 	// Make sure that the header is valid according to header rules.
 	assert!(gh.verify_child(h1));
 
