@@ -42,14 +42,14 @@ pub struct LongestChainRule;
 
 impl ForkChoice for LongestChainRule {
 	fn first_chain_is_better(chain_1: &[Header], chain_2: &[Header]) -> bool {
-		todo!("Exercise 1")
+		chain_1.len() > chain_2.len()
 	}
 
 	fn best_chain<'a>(candidate_chains: &[&'a [Header]]) -> &'a [Header] {
 		// Remember, this method is provided. You _can_ solve the exercise by
 		// simply deleting this block. It is up to you to decide whether this fork
 		// choice warrants a custom implementation.
-		todo!("Exercise 3")
+		candidate_chains.iter().max_by_key(|chain| chain.len()).copied().unwrap_or(&[])
 	}
 }
 
