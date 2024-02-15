@@ -68,12 +68,23 @@ pub struct HeaviestChainRule;
 /// usage is that you create a block using the normal `Block.child()` method
 /// and then pass the block to this helper for additional mining.
 fn mine_extra_hard(block: &mut Block, threshold: u64) {
-	todo!("Exercise 4")
+	loop {
+        block.header.consensus_digest += 1;
+
+        // Calculate the hash of the block's header
+        let hash_value = hash(&block.header);
+
+        // Check if the hash meets the threshold
+        if hash_value < threshold {
+            // If the hash meets the threshold, stop mining
+            break;
+        }
+    }
 }
 
 impl ForkChoice for HeaviestChainRule {
 	fn first_chain_is_better(chain_1: &[Header], chain_2: &[Header]) -> bool {
-		todo!("Exercise 5")
+		
 	}
 
 	fn best_chain<'a>(candidate_chains: &[&'a [Header]]) -> &'a [Header] {
