@@ -84,12 +84,34 @@ fn mine_extra_hard(block: &mut Block, threshold: u64) {
 
 impl ForkChoice for HeaviestChainRule {
 	fn first_chain_is_better(chain_1: &[Header], chain_2: &[Header]) -> bool {
-		
+		let mut chain_1_con_d_max = 0;
+		let mut chain_2_con_d_max = 0;
+
+		for h in chain_1{
+			if h.consensus_digest > chain_1_con_d_max {
+				chain_1_con_d_max = h.consensus_digest;
+			}
+		}
+		for h in chain_2{
+			if h.consensus_digest > chain_2_con_d_max {
+				chain_2_con_d_max = h.consensus_digest;
+			}
+		}
+
+		return chain_1_con_d_max <= chain_2_con_d_max;
 	}
 
 	fn best_chain<'a>(candidate_chains: &[&'a [Header]]) -> &'a [Header] {
 		// Remember, this method is provided.
-		todo!("Exercise 6")
+		let mut the_best = candidate_chains[0];
+		for i in 1..candidate_chains.len(){
+			let next_candidate = candidate_chains[i];
+			let next_is_better = HeaviestChainRule::first_chain_is_better(next_candidate, the_best);
+			if next_is_better == true{
+				the_best = next_candidate;
+			}
+		}
+		the_best
 	}
 }
 /// The best chain is the one with the most blocks that have even hashes.
