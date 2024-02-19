@@ -164,8 +164,85 @@ impl ForkChoice for MostBlocksWithEvenHash {
 /// 2. The suffix chain which is longer (non-overlapping with the common prefix)
 /// 3. The suffix chain with more work (non-overlapping with the common prefix)
 fn create_fork_one_side_longer_other_side_heavier() -> (Vec<Header>, Vec<Header>, Vec<Header>) {
-	todo!("Exercise 9")
+	let g = Header::genesis();
+    let mut prefix = vec![g.clone()];
+
+    let mut longer_chain = prefix.clone();
+    let mut heavier_chain = prefix.clone();
+
+    // Generate the longer chain
+    for i in 1..=5 {
+        let block = Block {
+            header: prefix.last().unwrap().child(hash(&[i]), i),
+            body: vec![],
+        };
+        prefix.push(block.header.clone());
+        longer_chain.push(block.header.clone());
+    }
+
+    // Generate the heavier chain
+    for i in 1..=3 {
+        let mut block = Block {
+            header: prefix.last().unwrap().child(hash(&[i]), i),
+            body: vec![],
+        };
+        // Mine the block extra hard to increase difficulty
+        mine_extra_hard(&mut block, THRESHOLD / 2);
+        prefix.push(block.header.clone());
+        heavier_chain.push(block.header.clone());
+    }
+
+    (prefix, longer_chain, heavier_chain)
 }
+
+/// The PoW threshold for mining
+// const THRESHOLD: u64 = u64::MAX / 100;
+
+/// Mutates a block (and its embedded header) to contain more PoW difficulty.
+/// This will be useful for exploring the heaviest chain rule. The expected
+/// usage is that you create a block using the normal `Block.child()` method
+/// and then pass the block to this helper for additional mining.
+// fn mine_extra_hard(block: &mut Block, threshold: u64) {
+//     loop {
+//         block.header.consensus_digest += 1;
+//         // Calculate the hash of the block's header
+//         let hash_value = hash(&block.header);
+//         // Check if the hash meets the threshold
+//         if hash_value < threshold {
+//             // If the hash meets the threshold, stop mining
+//             break;
+//         }
+//     }
+// }
+
+/// The best chain is the one with the most accumulated work.
+// pub struct HeaviestChainRule;
+
+// impl ForkChoice for HeaviestChainRule {
+//     fn first_chain_is_better(chain_1: &[Header], chain_2: &[Header]) -> bool {
+//         let work_1: u64 = chain_1.iter().map(|header| THRESHOLD - hash(&header)).sum();
+//         let work_2: u64 = chain_2.iter().map(|header| THRESHOLD - hash(&header)).sum();
+//         work_2 > work_1
+//     }
+
+    // fn best_chain<'a>(candidate_chains: &[&'a [Header]]) -> &'a [Header] {
+    //     candidate_chains
+    //         .iter()
+    //         .max_by_key(|&&chain| chain.iter().map(|header| THRESHOLD - hash(&header)).sum())
+    //         .copied()
+    //         .unwrap()
+    // }
+
+
+
+/// A trait for fork choice rules.
+// pub trait ForkChoice {
+//     /// Compare two chains, and return true if the first chain is better than the second one.
+//     fn first_chain_is_better(chain_1: &[Header], chain_2: &[Header]) -> bool;
+
+//     /// Compare many chains and return the best one.
+//     fn best_chain<'a>(candidate_chains: &[&'a [Header]]) -> &'a [Header];
+// }
 
 #[test]
 fn bc_5_longest_chain() {
