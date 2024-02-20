@@ -172,10 +172,11 @@ fn create_fork_one_side_longer_other_side_heavier() -> (Vec<Header>, Vec<Header>
 
     // Generate the longer chain
     for i in 1..=5 {
-        let block = Block {
+        let mut block = Block {
             header: prefix.last().unwrap().child(hash(&[i]), i),
             body: vec![],
         };
+		block.header.consensus_digest = THRESHOLD;
         prefix.push(block.header.clone());
         longer_chain.push(block.header.clone());
     }
@@ -189,14 +190,14 @@ fn create_fork_one_side_longer_other_side_heavier() -> (Vec<Header>, Vec<Header>
         // Mine the block extra hard to increase difficulty
         mine_extra_hard(&mut block, THRESHOLD / 2);
         prefix.push(block.header.clone());
+		block.header.consensus_digest = 3;
         heavier_chain.push(block.header.clone());
     }
 
     (prefix, longer_chain, heavier_chain)
 }
 
-/// The PoW threshold for mining
-// const THRESHOLD: u64 = u64::MAX / 100;
+
 
 /// Mutates a block (and its embedded header) to contain more PoW difficulty.
 /// This will be useful for exploring the heaviest chain rule. The expected
@@ -233,16 +234,6 @@ fn create_fork_one_side_longer_other_side_heavier() -> (Vec<Header>, Vec<Header>
     //         .unwrap()
     // }
 
-
-
-/// A trait for fork choice rules.
-// pub trait ForkChoice {
-//     /// Compare two chains, and return true if the first chain is better than the second one.
-//     fn first_chain_is_better(chain_1: &[Header], chain_2: &[Header]) -> bool;
-
-//     /// Compare many chains and return the best one.
-//     fn best_chain<'a>(candidate_chains: &[&'a [Header]]) -> &'a [Header];
-// }
 
 #[test]
 fn bc_5_longest_chain() {
