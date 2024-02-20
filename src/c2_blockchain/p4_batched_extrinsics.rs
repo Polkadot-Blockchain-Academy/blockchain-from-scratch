@@ -28,14 +28,20 @@ pub struct Header {
 impl Header {
 	/// Returns a new valid genesis header.
 	pub fn genesis() -> Self {
-		todo!("Exercise 1")
+		Header { parent: (0), height: (0), extrinsics_root: (0), state: (0), consensus_digest: (0) }
 	}
 
 	/// Create and return a valid child header.
 	/// Without the extrinsics themselves, we cannot calculate the final state
 	/// so that information is passed in.
 	pub fn child(&self, extrinsics_root: Hash, state: u64) -> Self {
-		todo!("Exercise 2")
+		Header {
+			parent: hash(&self),
+			height: self.height + 1,
+			extrinsics_root,
+			state,
+			consensus_digest: self.consensus_digest
+		}
 	}
 
 	/// Verify a single child header.
@@ -46,7 +52,14 @@ impl Header {
 	/// subtask of checking an entire block. So it doesn't make sense to check
 	/// the entire header chain at once if the chain may be invalid at the second block.
 	fn verify_child(&self, child: &Header) -> bool {
-		todo!("Exercise 3")
+		
+			if child.parent != hash(&self){
+				return false;
+			}
+			if child.height != self.height +1{
+				return false;
+			}
+			true
 	}
 
 	/// Verify that all the given headers form a valid chain from this header to the tip.
@@ -57,7 +70,16 @@ impl Header {
 	///  - with head recursion
 	///  - with tail recursion
 	fn verify_sub_chain(&self, chain: &[Header]) -> bool {
-		todo!("Exercise 4")
+		let mut prev_header = self;
+
+		for header in chain{
+			if !prev_header.verify_child(header) {
+                return false;
+            }
+
+			prev_header = header;
+		}
+		true
 	}
 }
 
@@ -76,20 +98,62 @@ pub struct Block {
 impl Block {
 	/// Returns a new valid genesis block. By convention this block has no extrinsics.
 	pub fn genesis() -> Self {
-		todo!("Exercise 5")
+		let header = Header::genesis();
+
+		Block { header, body: Vec::new() }
 	}
 
 	/// Create and return a valid child block.
 	/// The extrinsics are batched now, so we need to execute each of them.
 	pub fn child(&self, extrinsics: Vec<u64>) -> Self {
-		todo!("Exercise 6")
+		let new_height = self.header.height + 1;
+		let new_state = &self.header.state + extrinsics.iter().sum::<u64>();
+		let extrinsics_root = hash(&extrinsics);
+
+		let header = Header {
+			parent: hash(&self.header),
+			height: new_height,
+			extrinsics_root,
+			state: new_state,
+			consensus_digest: self.header.consensus_digest
+		};
+
+		Block{header, body: extrinsics}
+
+		
 	}
 
 	/// Verify that all the given blocks form a valid chain from this block to the tip.
 	///
 	/// We need to verify the headers as well as execute all transactions and check the final state.
 	pub fn verify_sub_chain(&self, chain: &[Block]) -> bool {
-		todo!("Exercise 7")
+		
+
+		let mut prev_block = self;
+
+		for block in chain{
+			if block.header.parent != hash(&prev_block.header){
+				return false;
+			}
+
+			let mut prev_header = &prev_block.header;
+			let mut state = &prev_block.header.state;
+		
+			if block.header.parent != hash(prev_header){
+				return false;
+			}
+			if block.header.height != prev_header.height + 1{
+				return false;
+			}
+			if block.header.state != state + block.body.iter().sum::<u64>(){
+				return false;
+			}
+			prev_header = &block.header;
+			state = &block.header.state;
+			
+			prev_block = block;
+		}
+		true
 	}
 }
 
@@ -102,7 +166,20 @@ impl Block {
 ///
 /// Notice that you do not need the entire parent block to do this. You only need the header.
 fn build_invalid_child_block_with_valid_header(parent: &Header) -> Block {
-	todo!("Exercise 8")
+    let child_header = Header {
+        parent: hash(&parent), 
+		height: parent.height + 1,
+        extrinsics_root: hash(&vec![1, 2, 3]), 
+        state: 100, 
+        consensus_digest: 0, 
+    };
+
+    let invalid_extrinsics = vec![100, 200, 300]; 
+	
+    Block {
+        header: child_header,
+        body: invalid_extrinsics,
+    }
 }
 
 #[test]
@@ -167,6 +244,8 @@ fn bc_4_verify_three_blocks() {
 	let b1 = g.child(vec![1]);
 	let b2 = b1.child(vec![2]);
 	let chain = vec![g.clone(), b1, b2];
+	println!("Chain: {:?}", chain); // Debug print added
+
 	assert!(g.verify_sub_chain(&chain[1..]));
 }
 
@@ -203,7 +282,7 @@ fn bc_4_student_invalid_block_really_is_invalid() {
 
 	let b1 = build_invalid_child_block_with_valid_header(gh);
 	let h1 = &b1.header;
-
+	
 	// Make sure that the header is valid according to header rules.
 	assert!(gh.verify_child(h1));
 

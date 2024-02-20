@@ -24,6 +24,7 @@ pub enum ClothesState {
 }
 
 /// Something you can do with clothes
+#[derive(PartialEq, Eq)]
 pub enum ClothesAction {
 	/// Wearing clothes decreases their life by 1 and makes them dirty.
 	Wear,
@@ -40,7 +41,87 @@ impl StateMachine for ClothesMachine {
 	type Transition = ClothesAction;
 
 	fn next_state(starting_state: &ClothesState, t: &ClothesAction) -> ClothesState {
-		todo!("Exercise 3")
+		// let mut starting_state_is_clean_4 = starting_state == &ClothesState::Clean(4);
+		// let mut is_action_wear = t == &ClothesAction::Wear;
+
+		// if starting_state_is_clean_4 && is_action_wear{
+		// 	return ClothesState::Dirty(3);
+		// }
+
+		// let mut starting_state_is_dirty_4 = starting_state == &ClothesState::Dirty(4);
+
+		// if starting_state_is_dirty_4 && is_action_wear{
+		// 	return ClothesState::Dirty(3);
+		// }
+
+		// let mut starting_state_is_wet_4 =
+
+		match starting_state {
+			&ClothesState::Clean(d) => {
+				if &ClothesAction::Wear == t {
+					if d <= 1 {
+						return ClothesState::Tattered;
+					}
+					return ClothesState::Dirty(d - 1);
+				}
+				if &ClothesAction::Wash == t {
+					if d <= 1 {
+						return ClothesState::Tattered;
+					}
+					return ClothesState::Wet(d - 1);
+				}
+				if &ClothesAction::Dry == t {
+					if d <= 1 {
+						return ClothesState::Tattered;
+					}
+					return ClothesState::Clean(d - 1);
+				}
+			},
+			&ClothesState::Dirty(d) => {
+				if &ClothesAction::Wear == t {
+					if d <= 1 {
+						return ClothesState::Tattered;
+					}
+					return ClothesState::Dirty(d - 1);
+				}
+				if &ClothesAction::Wash == t {
+					if d <= 1 {
+						return ClothesState::Tattered;
+					}
+					return ClothesState::Wet(d - 1);
+				}
+				if &ClothesAction::Dry == t {
+					if d <= 1 {
+						return ClothesState::Tattered;
+					}
+					return ClothesState::Dirty(d - 1);
+				}
+			},
+			&ClothesState::Wet(d) => {
+				if &ClothesAction::Wear == t {
+					if d <= 1 {
+						return ClothesState::Tattered;
+					}
+					return ClothesState::Dirty(d - 1);
+				}
+				if &ClothesAction::Wash == t {
+					if d <= 1 {
+						return ClothesState::Tattered;
+					}
+					return ClothesState::Wet(d - 1);
+				}
+				if &ClothesAction::Dry == t {
+					if d <= 1 {
+						return ClothesState::Tattered;
+					}
+					return ClothesState::Clean(d - 1);
+				}
+			},
+			&ClothesState::Tattered => {
+				return ClothesState::Tattered;
+			},
+		};
+		todo!()
 	}
 }
 

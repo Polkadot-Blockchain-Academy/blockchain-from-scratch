@@ -6,6 +6,7 @@ mod p1_switches;
 mod p2_laundry_machine;
 mod p3_atm;
 mod p4_accounted_currency;
+//todo fix 2 tests related to serial
 mod p5_digital_cash;
 mod p6_open_ended;
 
