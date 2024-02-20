@@ -33,7 +33,24 @@ pub trait ForkChoice {
 	/// two chains. Therefore this method has a provided implementation. However,
 	/// it may be much more performant to write a fork-choice-specific implementation.
 	fn best_chain<'a>(candidate_chains: &[&'a [Header]]) -> &'a [Header] {
-		todo!("Exercise 1")
+		if candidate_chains.is_empty() {
+			return &[];
+		}
+	
+		// Select the first chain as the initial best chain
+		let mut best_chain = candidate_chains[0];
+	
+		// Iterate through the remaining candidate chains
+		for chain in candidate_chains.iter().skip(1) {
+			// Use the fork choice rule's method to determine if the current chain is better than the best chain
+			if HeaviestChainRule::first_chain_is_better(chain, best_chain) {
+				// If the current chain is better, update the best chain
+				best_chain = chain;
+			}
+		}
+	
+		// Return the best chain found
+		best_chain
 	}
 }
 
@@ -132,12 +149,20 @@ pub struct MostBlocksWithEvenHash;
 
 impl ForkChoice for MostBlocksWithEvenHash {
 	fn first_chain_is_better(chain_1: &[Header], chain_2: &[Header]) -> bool {
-		todo!("Exercise 7")
+		let even_blocks_chain_1 = chain_1.iter().filter(|&header| hash(&header) % 2 == 0).count();
+        let even_blocks_chain_2 = chain_2.iter().filter(|&header| hash(&header) % 2 == 0).count();
+        even_blocks_chain_1 > even_blocks_chain_2
 	}
 
 	fn best_chain<'a>(candidate_chains: &[&'a [Header]]) -> &'a [Header] {
 		// Remember, this method is provided.
-		todo!("Exercise 8")
+		candidate_chains
+            .iter()
+            .max_by_key(|&&chain| {
+                chain.iter().filter(|&header| hash(&header) % 2 == 0).count()
+            })
+            .copied()
+            .unwrap_or(&[])
 	}
 }
 
@@ -196,43 +221,6 @@ fn create_fork_one_side_longer_other_side_heavier() -> (Vec<Header>, Vec<Header>
 
     (prefix, longer_chain, heavier_chain)
 }
-
-
-
-/// Mutates a block (and its embedded header) to contain more PoW difficulty.
-/// This will be useful for exploring the heaviest chain rule. The expected
-/// usage is that you create a block using the normal `Block.child()` method
-/// and then pass the block to this helper for additional mining.
-// fn mine_extra_hard(block: &mut Block, threshold: u64) {
-//     loop {
-//         block.header.consensus_digest += 1;
-//         // Calculate the hash of the block's header
-//         let hash_value = hash(&block.header);
-//         // Check if the hash meets the threshold
-//         if hash_value < threshold {
-//             // If the hash meets the threshold, stop mining
-//             break;
-//         }
-//     }
-// }
-
-/// The best chain is the one with the most accumulated work.
-// pub struct HeaviestChainRule;
-
-// impl ForkChoice for HeaviestChainRule {
-//     fn first_chain_is_better(chain_1: &[Header], chain_2: &[Header]) -> bool {
-//         let work_1: u64 = chain_1.iter().map(|header| THRESHOLD - hash(&header)).sum();
-//         let work_2: u64 = chain_2.iter().map(|header| THRESHOLD - hash(&header)).sum();
-//         work_2 > work_1
-//     }
-
-    // fn best_chain<'a>(candidate_chains: &[&'a [Header]]) -> &'a [Header] {
-    //     candidate_chains
-    //         .iter()
-    //         .max_by_key(|&&chain| chain.iter().map(|header| THRESHOLD - hash(&header)).sum())
-    //         .copied()
-    //         .unwrap()
-    // }
 
 
 #[test]
