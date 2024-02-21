@@ -59,7 +59,101 @@ impl StateMachine for Atm {
 	type Transition = Action;
 
 	fn next_state(starting_state: &Self::State, t: &Self::Transition) -> Self::State {
-		todo!("Exercise 4")
+		match &t{
+			Action::SwipeCard(d)=>{
+				if starting_state.expected_pin_hash == Auth::Waiting{
+					let mut ret_state = Atm {
+						cash_inside: starting_state.cash_inside,
+						expected_pin_hash: Auth::Authenticating(1234),
+						keystroke_register: Vec::new(),
+					};
+					return ret_state;
+				} 
+				if starting_state.expected_pin_hash == Auth::Authenticating(1234){
+					let mut ret_state = Atm {
+						cash_inside: starting_state.cash_inside,
+						expected_pin_hash: starting_state.expected_pin_hash.clone(), 
+						keystroke_register: starting_state.keystroke_register.clone(),
+					};
+					return ret_state;
+				}
+				todo!()
+			}
+			Action::PressKey(d)=>{
+				if starting_state.expected_pin_hash == Auth::Waiting{
+					let mut ret_state = Atm {
+						cash_inside: starting_state.cash_inside,
+						expected_pin_hash: starting_state.expected_pin_hash.clone(), 
+						keystroke_register: starting_state.keystroke_register.clone(),
+					};
+					// ret_state.keystroke_register.push(d.clone());
+					return ret_state;
+				}
+				println!("Expected pin hash: {:?}", starting_state.expected_pin_hash);
+				if let Auth::Authenticating(_hash) = starting_state.expected_pin_hash {
+				
+					let mut ret_state = Atm {
+						cash_inside: starting_state.cash_inside,
+						expected_pin_hash: starting_state.expected_pin_hash.clone(), 
+						keystroke_register: starting_state.keystroke_register.clone(),
+					};
+					if Key::Enter == d.clone(){
+						let actual_pinhash = crate::hash(&ret_state.keystroke_register);
+						let actual_pinhash_auth = Auth::Authenticating(actual_pinhash);
+						if actual_pinhash_auth != ret_state.expected_pin_hash{
+							ret_state.expected_pin_hash = Auth::Waiting;
+						}
+						else{
+							ret_state.expected_pin_hash = Auth::Authenticated;
+						}
+						ret_state.keystroke_register = vec![];
+						return ret_state;
+					}
+					ret_state.keystroke_register.push(d.clone());
+					return ret_state;
+				}
+				
+				if starting_state.expected_pin_hash == Auth::Authenticated{
+					
+					let mut ret_state = Atm {
+						cash_inside: starting_state.cash_inside,
+						expected_pin_hash: starting_state.expected_pin_hash.clone(), 
+						keystroke_register: starting_state.keystroke_register.clone(),
+					};
+					if Key::Enter == d.clone(){
+						let mut users_sum:String = "".to_string();
+						for i in ret_state.keystroke_register.iter(){
+							match i {
+								Key::One => {users_sum.push('1')},
+								Key::Two => {users_sum.push('2')},
+								Key::Three => {users_sum.push('3')},
+								Key::Four => {users_sum.push('4')},
+								_=>{}
+							};
+						}
+
+						let provided_sum = users_sum.parse::<u64>().unwrap();
+						println!("users sum {}", users_sum);
+						println!("provided sum {}", provided_sum);
+						let available_cash = ret_state.cash_inside;
+						if provided_sum > available_cash{
+							ret_state.expected_pin_hash = Auth::Waiting;
+							ret_state.keystroke_register = vec![];
+						}
+						else{
+							ret_state.cash_inside = ret_state.cash_inside - provided_sum;
+							ret_state.expected_pin_hash = Auth::Waiting;
+							ret_state.keystroke_register = vec![];
+						}
+						return ret_state;
+					}
+					ret_state.keystroke_register.push(d.clone());
+					return ret_state;
+
+				}
+				todo!()
+			}
+		}
 	}
 }
 

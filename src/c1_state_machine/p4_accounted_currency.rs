@@ -8,7 +8,7 @@
 //! In this module we design a state machine that tracks the currency balances of several users.
 //! Each user is associated with an account balance and users are able to send money to other users.
 
-use super::{StateMachine, User};
+use super::{StateMachine, User, p5_digital_cash::Bank};
 use std::collections::HashMap;
 
 /// This state machine models a multi-user currency system. It tracks the balance of each
@@ -41,7 +41,51 @@ impl StateMachine for AccountedCurrency {
 	type Transition = AccountingTransaction;
 
 	fn next_state(starting_state: &Balances, t: &AccountingTransaction) -> Balances {
-		todo!("Exercise 1")
+		let mut ret_state = starting_state.clone();
+		match t{
+			&AccountingTransaction::Mint{minter, amount}=>{
+				let mut user_balance = ret_state.get(&minter);
+				if let Some(b) = user_balance{
+					ret_state.insert(minter, b+amount); 
+				}
+				else{
+					if amount > 0{
+						ret_state.insert(minter, amount);
+					}
+				}
+			},
+			&AccountingTransaction::Burn{burner, amount}=>{
+				let mut user_balance = ret_state.get(&burner);
+				if let Some(b) = user_balance{
+					if amount >= *b{
+						ret_state.remove(&burner);
+					}
+					else{
+						ret_state.insert(burner, b-amount);
+					}
+				}
+			}
+			&AccountingTransaction::Transfer{sender, receiver, amount}=>{
+				let mut sender_balance = ret_state.get(&sender);
+				let mut receiver_balance = ret_state.get(&receiver).unwrap_or(&0);
+				if let Some(b) = sender_balance{
+					if &amount <= b{
+						if sender == receiver{
+							return ret_state;
+						}
+						let mut new_sender_balance = b - &amount;
+						let mut new_receiver_balance = receiver_balance + &amount;
+						ret_state.insert(sender, new_sender_balance);
+						ret_state.insert(receiver, new_receiver_balance);
+						if new_sender_balance == 0{
+							ret_state.remove(&sender);
+						}
+					}
+				}
+			}
+			_=>{}
+		}
+		return ret_state;
 	}
 }
 
