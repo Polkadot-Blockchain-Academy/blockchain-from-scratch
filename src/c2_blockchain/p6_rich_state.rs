@@ -49,7 +49,13 @@ pub struct Header {
 impl Header {
 	/// Returns a new valid genesis header.
 	fn genesis(genesis_state_root: Hash) -> Self {
-		todo!("Exercise 1")
+		Header{
+			parent: 0,
+			height: 0,
+			extrinsics_root: 0,
+			state_root: genesis_state_root,
+			consensus_digest: 0,
+		}
 	}
 
 	/// Create and return a valid child header.
@@ -57,17 +63,37 @@ impl Header {
 	/// The state root is passed in similarly to how the complete state
 	/// was in the previous section.
 	fn child(&self, extrinsics_root: Hash, state_root: Hash) -> Self {
-		todo!("Exercise 2")
+		Header{
+			parent: hash(&self),
+			height: self.height +1,
+			extrinsics_root,
+			state_root,
+			consensus_digest: self.consensus_digest,
+		}
 	}
 
 	/// Verify a single child header.
 	fn verify_child(&self, child: &Header) -> bool {
-		todo!("Exercise 3")
+		if child.parent != hash(&self){
+			return false;
+		}
+		if child.parent != self.height{
+			return false;
+		}
+		true
 	}
 
 	/// Verify that all the given headers form a valid chain from this header to the tip.
 	fn verify_sub_chain(&self, chain: &[Header]) -> bool {
-		todo!("Exercise 4")
+		let mut prev_header = self;
+
+		for header in chain{
+			if !prev_header.verify_child(header){
+				return false;
+			}
+			prev_header = header;
+		}
+		true
 	}
 }
 
@@ -91,12 +117,46 @@ pub struct Block {
 impl Block {
 	/// Returns a new valid genesis block. By convention this block has no extrinsics.
 	pub fn genesis(genesis_state: &State) -> Self {
-		todo!("Exercise 5")
+		let block = Block{
+			header: Header{
+				parent: 0,
+				height: 0,
+				extrinsics_root: 0,
+				state_root: hash(genesis_state),
+				consensus_digest: 0,
+			},
+			body: vec![]
+		};
+		return block;
 	}
 
 	/// Create and return a valid child block.
 	pub fn child(&self, pre_state: &State, extrinsics: Vec<u64>) -> Self {
-		todo!("Exercise 6")
+		
+		let mut sum = pre_state.sum;
+        let mut product = pre_state.product;
+        for extrinsic in &extrinsics {
+            sum += extrinsic;
+            product *= extrinsic;
+        }
+
+        // Calculate the state root hash
+        let state_root = hash(&(sum, product));
+
+        // Create a new header for the child block
+        let new_header = Header {
+            parent: hash(&self.header),
+            height: self.header.height + 1,
+            extrinsics_root: hash(&extrinsics),
+            state_root,
+            consensus_digest: self.header.consensus_digest,
+        };
+
+        // Construct the child block using the new header and extrinsics
+        Block {
+            header: new_header,
+            body: extrinsics,
+        }
 	}
 
 	/// Verify that all the given blocks form a valid chain from this block to the tip.
@@ -105,7 +165,31 @@ impl Block {
 	/// have been given a valid pre-state. And we still need to verify the headers,
 	/// execute all transactions, and check the final state.
 	pub fn verify_sub_chain(&self, pre_state: &State, chain: &[Block]) -> bool {
-		todo!("Exercise 7")
+		let mut prev_state = pre_state.clone();
+        let mut prev_block = self;
+
+        for block in chain {
+            // Verify header consistency
+            if block.header.parent != hash(&prev_block.header) {
+                return false;
+            }
+
+            // Verify state transition
+            let mut new_state = prev_state.clone();
+            for extrinsic in &block.body {
+                new_state.sum += extrinsic;
+                new_state.product *= extrinsic;
+            }
+            if block.header.state_root != hash(&new_state) {
+                return false;
+            }
+
+            // Update previous state and block
+            prev_state = new_state;
+            prev_block = block;
+        }
+
+        true
 	}
 }
 
@@ -121,7 +205,23 @@ impl Block {
 /// As before, you do not need the entire parent block to do this. You only need the header.
 /// You do, however, now need a pre-state as you have throughout much of this section.
 fn build_invalid_child_block_with_valid_header(parent: &Header, pre_state: &State) -> Block {
-	todo!("Exercise 8")
+	// Create a valid header by using the parent header
+    let child_header = Header {
+        parent: hash(parent),
+        height: parent.height + 1,
+        extrinsics_root: hash(&vec![1, 2, 3]), // Dummy extrinsics root
+        state_root: hash(pre_state), // Using the correct pre-state hash
+        consensus_digest: 0,
+    };
+
+    // Create invalid extrinsics by providing incorrect state data
+    let invalid_extrinsics = vec![100, 200, 300];
+
+    // Return the block with the valid header and invalid extrinsics
+    Block {
+        header: child_header,
+        body: invalid_extrinsics,
+    }
 }
 
 #[test]
