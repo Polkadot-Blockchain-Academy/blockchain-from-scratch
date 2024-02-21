@@ -77,7 +77,7 @@ impl Header {
 		if child.parent != hash(&self){
 			return false;
 		}
-		if child.parent != self.height{
+		if child.height != self.height+1{
 			return false;
 		}
 		true
